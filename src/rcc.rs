@@ -164,7 +164,7 @@ pub enum LpUart1ClockSource {
     Pclk = 0b00,
     Sysclk = 0b01,
     Hsi16 = 0b10,
-    Lsi = 0b11
+    Lse = 0b11,
 }
 
 /// Peripherals independent clock configuration register
@@ -626,15 +626,21 @@ impl CFGR {
         // Check if HSI should be started
         let lpuart1_clk_from_hsi = match self.lpuart1_src {
             LpUart1ClockSource::Hsi16 => {
-                rcc.ccipr.modify(|_, w| unsafe { w.lpuart1sel().bits(self.lpuart1_src as u8) });
+                rcc.ccipr
+                    .modify(|_, w| unsafe { w.lpuart1sel().bits(self.lpuart1_src as u8) });
                 true
             }
-            LpUart1ClockSource::Lsi => {
-                todo!()
+            LpUart1ClockSource::Lse => {
+                rcc.ccipr
+                    .modify(|_, w| unsafe { w.lpuart1sel().bits(self.lpuart1_src as u8) });
+                false
             }
             _ => false,
         };
-        if pll_source == PllSource::HSI16 || (self.msi.is_none() && self.hse.is_none()) || lpuart1_clk_from_hsi {
+        if pll_source == PllSource::HSI16
+            || (self.msi.is_none() && self.hse.is_none())
+            || lpuart1_clk_from_hsi
+        {
             rcc.cr.modify(|_, w| w.hsion().set_bit());
             while rcc.cr.read().hsirdy().bit_is_clear() {}
         }
@@ -845,7 +851,7 @@ impl CFGR {
             timclk1: timclk1.Hz(),
             timclk2: timclk2.Hz(),
             pll_source: pllconf.map(|_| pll_source),
-            lpuart1_src: self.lpuart1_src
+            lpuart1_src: self.lpuart1_src,
         }
     }
 }

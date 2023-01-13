@@ -41,6 +41,8 @@ use crate::time::{Bps, U32Ext};
     // feature = "stm32l4s7",
     feature = "stm32l4r9",
     feature = "stm32l4s9",
+    feature = "stm32l433",
+    feature = "stm32l431",
 ))]
 use crate::dma::dma2;
 
@@ -221,10 +223,16 @@ pub struct Tx<USART> {
 }
 
 macro_rules! potentially_uncompilable {
-    (true, $expr:expr) => { $expr };
+    (true, $expr:expr) => {
+        $expr
+    };
     (false, $expr:expr) => {};
-    (true, $expr_true:expr, $expr_false:expr) => { $expr_true };
-    (false, $expr_true:expr, $expr_false:expr) => { $expr_false };
+    (true, $expr_true:expr, $expr_false:expr) => {
+        $expr_true
+    };
+    (false, $expr_true:expr, $expr_false:expr) => {
+        $expr_false
+    };
 }
 
 macro_rules! hal {
@@ -281,7 +289,7 @@ macro_rules! hal {
                         match config.oversampling {
                             Oversampling::Over8 => {
                                 let uartdiv = 2 * clocks.$pclkX().raw() / config.baudrate.0;
-                                assert!(uartdiv >= 16, "impossible baud rate");
+                                assert!(uartdiv >= 16, "impossible baud rate 1");
 
                                 let lower = (uartdiv & 0xf) >> 1;
                                 let brr = (uartdiv & !0xf) | lower;
@@ -291,7 +299,7 @@ macro_rules! hal {
                             }
                             Oversampling::Over16 => {
                                 let brr = clocks.$pclkX().raw() / config.baudrate.0;
-                                assert!(brr >= 16, "impossible baud rate");
+                                assert!(brr >= 16, "impossible baud rate 2");
 
                                 usart.brr.write(|w| unsafe { w.bits(brr) });
                             }
@@ -303,9 +311,9 @@ macro_rules! hal {
                             LpUart1ClockSource::Pclk => clocks.$pclkX().raw(),
                             LpUart1ClockSource::Sysclk => clocks.sysclk().raw(),
                             LpUart1ClockSource::Hsi16 => 16_000_000,
-                            LpUart1ClockSource::Lsi => 32_768,
+                            LpUart1ClockSource::Lse => 32_768,
                         };
-                        assert!((fck >= 3 * config.baudrate.0) && (fck <= 4096 * config.baudrate.0), "impossible baud rate");
+                        assert!((fck >= 3 * config.baudrate.0) && (fck <= 4096 * config.baudrate.0), "impossible baud rate 3");
                         let brr = 256u64 * (fck as u64) / config.baudrate.0 as u64;
                         let brr = brr as u32;
                         usart.brr.write(|w| unsafe { w.bits(brr) });
@@ -935,6 +943,11 @@ hal! {
     LPUART1: (lpuart1, pclk1, tx: (TxDmaL1, dma2::C6, DmaInput::LpUart1Tx), rx: (RxDmaL1, dma2::C7, DmaInput::LpUart1Rx), false,),
 }
 
+#[cfg(any(feature = "stm32l431", feature = "stm32l433",))]
+hal! {
+    LPUART1: (lpuart1, pclk1, tx: (TxDmaL1, dma2::C6, DmaInput::LpUart1Tx), rx: (RxDmaL1, dma2::C7, DmaInput::LpUart1Rx), false,),
+}
+
 impl<USART, PINS> fmt::Write for Serial<USART, PINS>
 where
     Serial<USART, PINS>: crate::hal::serial::Write<u8>,
@@ -1173,6 +1186,8 @@ impl_pin_traits! {
     // feature = "stm32l4s7",
     // feature = "stm32l4r9",
     // feature = "stm32l4s9",
+    feature = "stm32l433",
+    feature = "stm32l431",
 ))]
 impl_pin_traits! {
     LPUART1: {

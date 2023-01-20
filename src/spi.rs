@@ -310,7 +310,7 @@ hal! {
 }
 
 pins!(SPI1, 5,
-    SCK: [PA5, PB3, PE13],
+    SCK: [PA1, PA5, PB3, PE13],
     MISO: [PA6, PB4, PE14],
     MOSI: [PA7, PB5, PE15]);
 
